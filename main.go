@@ -17,12 +17,24 @@ var ThreadCount = 100
 func main() {
 	filePath := flag.String("s", "", "entrypoints filename")
 	topic := flag.String("t", "", "topic arn")
+	newTopic := flag.String("n", "", "new topic name")
 	protocol := flag.String("p", "application", "sns protocol")
 	region := flag.String("r", "ap-northeast-1", "aws region")
 	flag.Parse()
-	if *filePath == "" || *topic == "" || *protocol == "" || *region == "" {
+	if *filePath == "" || (*topic == "" && *newTopic == "") || *protocol == "" || *region == "" {
 		flag.PrintDefaults()
 		return
+	}
+	if *newTopic != "" {
+		svc := sns.New(&aws.Config{Region: aws.String(*region)})
+		params := &sns.CreateTopicInput{Name: aws.String(*newTopic)}
+		out, err := svc.CreateTopic(params)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		topic = out.TopicArn
+		log.Println("new arn: " + *topic)
 	}
 
 	var finCh = make(chan int)
@@ -70,4 +82,5 @@ func main() {
 		finCh <- 0
 	}
 	log.Println("fin all")
+	log.Println("arn: " + *topic)
 }
